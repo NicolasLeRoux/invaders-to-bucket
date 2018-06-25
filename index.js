@@ -84,7 +84,7 @@ query(uuid)
         }),
         map(json => json.invaders),
         mergeMap(invaders => from(Object.values(invaders))),
-        concatMap(invader => download(invader)),
+        mergeMap(invader => download(invader)),
         mergeMap(invader => upload(invader, bucketName))
     )
     .subscribe(invader => {
