@@ -11,6 +11,7 @@ if (!uuid) {
 }
 
 const projectId = 'geosaic-207514';
+const bucketName = 'geosaic-207514-invaders';
 const storage = new Storage({
     projectId,
     keyFilename: 'keyfile.json'
@@ -44,22 +45,36 @@ const query = function (id) {
  * @return An observable of the response
  */
 const download = function (invader) {
-    const dir = path.join(__dirname, `tmp/${invader.name}`);
+    const fileName = path.join(__dirname, `tmp/${invader.name}.jpg`);
     const subj = new Subject();
 
     request.get(invader.image)
-        .pipe(fs.createWriteStream(dir))
+        .pipe(fs.createWriteStream(fileName))
         .on('close', () => {
+            subj.next(Object.assign({}, invader, {fileName}));
+        });
+
+    return subj.asObservable();
+}
+
+/**
+ * Method to upload a given invader on a bucket.
+ */
+const upload = function (invader, bucket) {
+    const subj = new Subject();
+
+    storage
+        .bucket(bucket)
+        .upload(invader.fileName)
+        .then(() => {
             subj.next(invader);
         });
 
-    return subj;
+    return subj.asObservable();
 }
 
 query(uuid)
     .pipe(
-        map(json => json.invaders),
-        mergeMap(invaders => from(Object.values(invaders))),
         tap(() => {
             const dir = path.join(__dirname, 'tmp/');
 
@@ -67,11 +82,13 @@ query(uuid)
                 fs.mkdirSync(dir);
             }
         }),
-        take(1),
-        concatMap(invader => download(invader))
+        map(json => json.invaders),
+        mergeMap(invaders => from(Object.values(invaders))),
+        concatMap(invader => download(invader)),
+        mergeMap(invader => upload(invader, bucketName))
     )
-    .subscribe(data => {
-        console.log(data);
+    .subscribe(invader => {
+        console.log(`The mosaic '${invader.name}' have been saved !`);
     }, error => {
         console.log(error);
     });

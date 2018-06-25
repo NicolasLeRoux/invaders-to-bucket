@@ -62,3 +62,6 @@ typings/
 
 # Temporary directory
 tmp
+
+# Service account to write on bucket
+keyfile.json
