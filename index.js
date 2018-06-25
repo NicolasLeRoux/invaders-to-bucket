@@ -1,7 +1,9 @@
 const request = require('request');
 const Storage = require('@google-cloud/storage');
 const { Subject, from } = require('rxjs');
-const { map, mergeMap } = require('rxjs/operators');
+const { map, mergeMap, take, concatMap, tap } = require('rxjs/operators');
+const fs = require('fs');
+const path = require('path');
 
 const uuid = process.argv[2];
 if (!uuid) {
@@ -36,10 +38,37 @@ const query = function (id) {
     return subj.asObservable();
 }
 
+/**
+ * Method to download a given invader.
+ * @param invader The invader to download
+ * @return An observable of the response
+ */
+const download = function (invader) {
+    const dir = path.join(__dirname, `tmp/${invader.name}`);
+    const subj = new Subject();
+
+    request.get(invader.image)
+        .pipe(fs.createWriteStream(dir))
+        .on('close', () => {
+            subj.next(invader);
+        });
+
+    return subj;
+}
+
 query(uuid)
     .pipe(
         map(json => json.invaders),
-        mergeMap(invaders => from(Object.values(invaders)))
+        mergeMap(invaders => from(Object.values(invaders))),
+        tap(() => {
+            const dir = path.join(__dirname, 'tmp/');
+
+            if (!fs.existsSync(dir)){
+                fs.mkdirSync(dir);
+            }
+        }),
+        take(1),
+        concatMap(invader => download(invader))
     )
     .subscribe(data => {
         console.log(data);
