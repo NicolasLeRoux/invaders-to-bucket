@@ -4,7 +4,7 @@
   "description": "TODO...",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
@@ -18,5 +18,10 @@
   "bugs": {
     "url": "https://github.com/NicolasLeRoux/invaders-to-bucket/issues"
   },
-  "homepage": "https://github.com/NicolasLeRoux/invaders-to-bucket#readme"
+  "homepage": "https://github.com/NicolasLeRoux/invaders-to-bucket#readme",
+  "dependencies": {
+    "@google-cloud/storage": "^1.7.0",
+    "request": "^2.87.0",
+    "rxjs": "^6.2.1"
+  }
 }
